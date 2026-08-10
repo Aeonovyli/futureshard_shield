@@ -5,6 +5,4 @@ The field is invisible, (not on purpose, sad) but because it simply punches host
 
 I tested it on (sorry snow golums) certain non-hostile mobs which I spawned in the village. And, (sorry villagers) it goes through walls. Have fun but don't touch golums. Lucky for me I was in creative.
 
-I haven't yet uploaded it to contentDB, I'm getting there. If you like this, I'd be happy to recieve pull requests. :)
-
 Aeonovyli, TheSilverStone.
