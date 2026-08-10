@@ -3,6 +3,23 @@ local SHARD_ITEM  = "mcl_amethyst:amethyst_shard"
 local SHIELD_STATE = {}
 local shard_seconds = 3
 
+local blacklist = {}
+local blacklist_path = minetest.get_modpath("futureshard_shield") .. "/blacklist.conf"
+
+local function load_blacklist()
+    local file = io.open(blacklist_path, "r")
+    if not file then return end
+    for line in file:lines() do
+        line = line:match("^%s*(.-)%s*$")
+        if line and line:sub(1,1) ~= "#" and line ~= "" then
+            blacklist[line] = true
+        end
+    end
+    file:close()
+end
+
+load_blacklist()
+
 minetest.register_on_punchplayer(function(player)
     local pname = player:get_player_name()
     local state = SHIELD_STATE[pname]
@@ -19,9 +36,7 @@ minetest.register_entity("futureshard_shield:shield_entity", {
         visual = "mesh",
         mesh = "futureshard_shield_sphere.obj",
     },
-
     player = nil,
-
     on_step = function(self, dtime)
         if not self.player or not self.player:is_player() then
             self.object:remove()
@@ -114,7 +129,25 @@ minetest.register_globalstep(function(dtime)
 
                     for _, obj in ipairs(objs) do
                         if not obj:is_player() then
-                            obj:punch(player, 1.0, {damage_groups = {fleshy = 10000}})
+                            local lua_ent = obj:get_luaentity()
+                            local entity_name = "unknown"
+
+                            if lua_ent and lua_ent.name then
+                                entity_name = lua_ent.name
+                            elseif obj.get_name then
+                                entity_name = obj:get_name()
+                            end
+
+                            if not blacklist[entity_name] then
+                                -- Check for Wither
+                                if entity_name == "mobs:wither" or entity_name:find("wither") then
+                                    -- Skip damage for Wither
+                                else
+                                    if obj.punch then
+                                        obj:punch(player, 1.0, {damage_groups = {fleshy = 10000}})
+                                    end
+                                end
+                            end
                         end
                     end
 
