@@ -1,29 +1,27 @@
 minetest.register_craft({
     output = "futureshard_shield:core",
     recipe = {
-        {"mcl_nether:nether_star","mcl_amethyst:amethyst_shard","mcl_nether:nether_star"},
-        {"mcl_core:diamondblock","mcl_core:obsidian","mcl_core:diamondblock"},
-        {"mcl_nether:blaze_rod","mcl_end:ender_eye","mcl_nether:blaze_rod"}
+        {"mcl_amethyst:amethyst_shard","mcl_core:glass","mcl_amethyst:amethyst_shard"},
+        {"mcl_core:lapis","mcl_nether:nether_star","mcl_core:lapis"},
+        {"mcl_amethyst:amethyst_shard","mcl_mobitems:flaming_powder","mcl_amethyst:amethyst_shard"}
     }
 })
 
 minetest.register_craft({
     output = "futureshard_shield:frame",
     recipe = {
-        {"mcl_redstone:redstone_block","mcl_end:chorus_fruit_popped","mcl_redstone:redstone_block"},
-        {"mcl_core:goldblock","mcl_end:purpur_block","mcl_core:goldblock"},
-        {"mcl_nether:crying_obsidian","mcl_nether:ancient_debris","mcl_nether:crying_obsidian"}
+        {"mcl_core:lapis","","mcl_core:emerald"},
+        {"","","mcl_core:lapis"},
+        {"mcl_core:lapis","","mcl_core:lapis"}
     }
 })
 
 minetest.register_craft({
-    type = "shapeless",
     output = "futureshard_shield:sphere",
     recipe = {
-        "futureshard_shield:core",
-        "futureshard_shield:frame",
-        "mcl_amethyst:amethyst_block",
-        "mcl_end:dragon_breath"
+        {"mcl_core:iron_ingot","mcl_end:chorus_fruit_popped","mcl_core:iron_ingot"},
+        {"futureshard_shield:core","xpanes:bar","mcl_core:goldblock"},
+        {"mcl_core:iron_ingot","mcl_nether:ancient_debris","mcl_core:iron_ingot"}
     }
 })
 
