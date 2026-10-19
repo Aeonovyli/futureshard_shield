@@ -1,7 +1,8 @@
 local SHIELD_NAME = "futureshard_shield:shield"
-local SHARD_ITEM  = "mcl_amethyst:amethyst_shard"
+local SHARD_ITEM  = "futureshard_shield:nelsylite_shard"
 local SHIELD_STATE = {}
 local shard_seconds = 3
+local COOLDOWN_TIME = 2.0 -- 2-second cooldown between shots
 
 local blacklist = {}
 local blacklist_path = minetest.get_modpath("futureshard_shield") .. "/blacklist.conf"
@@ -60,16 +61,10 @@ minetest.register_craftitem("futureshard_shield:sphere", {
     inventory_image = "futureshard_shield_sphere.png"
 })
 
-minetest.register_tool(SHIELD_NAME, {
-    description = "Amethyst Sphere Shield",
-    inventory_image = "futureshard_shield.png",
-    groups = {tool = 1}
-})
-
 local function stop_shield(pname)
     local state = SHIELD_STATE[pname]
     if not state then return end
-    if state.entity then
+    if state.entity and state.entity:get_luaentity() then
         state.entity:remove()
     end
     local player = minetest.get_player_by_name(pname)
@@ -78,6 +73,70 @@ local function stop_shield(pname)
     end
     SHIELD_STATE[pname] = nil
 end
+
+local function fire_lightning(player)
+    local eye_pos = player:get_pos()
+    eye_pos.y = eye_pos.y + (player:get_properties().eye_height or 1.5)
+    local dir = player:get_look_dir()
+
+    -- FIXED: Raycast starts from the actual camera, but the beam particles start 2 blocks away
+    local beam_start_pos = vector.add(eye_pos, vector.multiply(dir, 2))
+    local target_pos = vector.add(eye_pos, vector.multiply(dir, 60))
+
+    local ray = minetest.raycast(eye_pos, target_pos, true, false)
+    while true do
+        local pointed = ray:next()
+        if not pointed then break end
+
+        if pointed.type == "object" and pointed.ref ~= player then
+            local obj = pointed.ref
+            local lua_ent = obj:get_luaentity()
+            local entity_name = lua_ent and lua_ent.name or (obj.get_name and obj:get_name() or "unknown")
+
+            if entity_name ~= "futureshard_shield:shield_entity" and not blacklist[entity_name] and not entity_name:find("wither") then
+                if obj.punch then
+                    obj:punch(player, 1.0, {damage_groups = {fleshy = 30000}})
+                end
+            end
+        elseif pointed.type == "node" then
+            target_pos = pointed.intersection_point or target_pos
+            break
+        end
+    end
+
+    -- Draw the beam starting 2 blocks away up to the impact target point
+    local distance = vector.distance(beam_start_pos, target_pos)
+    local steps = math.floor(distance * 4)
+
+    if steps > 0 then
+        for i = 0, steps do
+            local t = i / steps
+            local p_pos = vector.add(beam_start_pos, vector.multiply(vector.direction(beam_start_pos, target_pos), distance * t))
+
+            minetest.add_particle({
+                pos = p_pos,
+                velocity = {x=0, y=0, z=0},
+                acceleration = {x=0, y=0, z=0},
+                expirationtime = 0.3,
+                size = 2,
+                collisiondetection = false,
+                vertical = false,
+                texture = "particle.png", -- FIXED: Removed colorization modifier
+                glow = 14,
+            })
+        end
+    end
+
+    if minetest.registered_entities["mcl_weather:lightning"] then
+        minetest.add_entity(target_pos, "mcl_weather:lightning")
+    end
+end
+
+minetest.register_tool(SHIELD_NAME, {
+    description = "Amethyst Sphere Shield",
+    inventory_image = "futureshard_shield.png",
+    groups = {tool = 1}
+})
 
 minetest.register_globalstep(function(dtime)
     for _, player in ipairs(minetest.get_connected_players()) do
@@ -101,6 +160,8 @@ minetest.register_globalstep(function(dtime)
                             entity = obj,
                             inv = inv,
                             time = 0,
+                            cooldown = 0, -- FIXED: Added tracking for 2-second reload time
+                            click_released = true,
                             last_dist = {}
                         }
                         state = SHIELD_STATE[pname]
@@ -110,6 +171,22 @@ minetest.register_globalstep(function(dtime)
             end
 
             if state then
+                -- Reduce the reload cooldown timer over time
+                if state.cooldown > 0 then
+                    state.cooldown = state.cooldown - dtime
+                end
+
+                local controls = player:get_player_control()
+                if controls.dig then
+                    if state.click_released and state.cooldown <= 0 then
+                        fire_lightning(player)
+                        state.cooldown = COOLDOWN_TIME -- FIXED: Trigger the reload delay
+                        state.click_released = false
+                    end
+                else
+                    state.click_released = true
+                end
+
                 state.time = state.time + dtime
                 if state.time >= shard_seconds then
                     state.time = state.time - shard_seconds
@@ -138,11 +215,8 @@ minetest.register_globalstep(function(dtime)
                                 entity_name = obj:get_name()
                             end
 
-                            if not blacklist[entity_name] then
-                                -- Check for Wither
-                                if entity_name == "mobs:wither" or entity_name:find("wither") then
-                                    -- Skip damage for Wither
-                                else
+                            if entity_name ~= "futureshard_shield:shield_entity" and not blacklist[entity_name] then
+                                if not entity_name:find("wither") then
                                     if obj.punch then
                                         obj:punch(player, 1.0, {damage_groups = {fleshy = 10000}})
                                     end
