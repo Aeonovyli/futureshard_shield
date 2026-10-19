@@ -2,7 +2,7 @@ local SHIELD_NAME = "futureshard_shield:shield"
 local SHARD_ITEM  = "futureshard_shield:nelsylite_shard"
 local SHIELD_STATE = {}
 local shard_seconds = 3
-local COOLDOWN_TIME = 2.0 -- 2-second cooldown between shots
+local COOLDOWN_TIME = 2.0
 
 local blacklist = {}
 local blacklist_path = minetest.get_modpath("futureshard_shield") .. "/blacklist.conf"
@@ -79,7 +79,6 @@ local function fire_lightning(player)
     eye_pos.y = eye_pos.y + (player:get_properties().eye_height or 1.5)
     local dir = player:get_look_dir()
 
-    -- FIXED: Raycast starts from the actual camera, but the beam particles start 2 blocks away
     local beam_start_pos = vector.add(eye_pos, vector.multiply(dir, 2))
     local target_pos = vector.add(eye_pos, vector.multiply(dir, 60))
 
@@ -104,7 +103,6 @@ local function fire_lightning(player)
         end
     end
 
-    -- Draw the beam starting 2 blocks away up to the impact target point
     local distance = vector.distance(beam_start_pos, target_pos)
     local steps = math.floor(distance * 4)
 
@@ -121,7 +119,7 @@ local function fire_lightning(player)
                 size = 2,
                 collisiondetection = false,
                 vertical = false,
-                texture = "particle.png", -- FIXED: Removed colorization modifier
+                texture = "particle.png",
                 glow = 14,
             })
         end
@@ -160,7 +158,7 @@ minetest.register_globalstep(function(dtime)
                             entity = obj,
                             inv = inv,
                             time = 0,
-                            cooldown = 0, -- FIXED: Added tracking for 2-second reload time
+                            cooldown = 0,
                             click_released = true,
                             last_dist = {}
                         }
@@ -171,7 +169,6 @@ minetest.register_globalstep(function(dtime)
             end
 
             if state then
-                -- Reduce the reload cooldown timer over time
                 if state.cooldown > 0 then
                     state.cooldown = state.cooldown - dtime
                 end
@@ -180,7 +177,7 @@ minetest.register_globalstep(function(dtime)
                 if controls.dig then
                     if state.click_released and state.cooldown <= 0 then
                         fire_lightning(player)
-                        state.cooldown = COOLDOWN_TIME -- FIXED: Trigger the reload delay
+                        state.cooldown = COOLDOWN_TIME
                         state.click_released = false
                     end
                 else
