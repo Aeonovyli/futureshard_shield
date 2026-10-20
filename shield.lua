@@ -47,17 +47,17 @@ minetest.register_entity("futureshard_shield:shield_entity", {
 })
 
 minetest.register_craftitem("futureshard_shield:core", {
-    description = "This strange, glowing sphere pulses with energy",
+    description = "Futureshard Shield Core",
     inventory_image = "futureshard_shield_core.png"
 })
 
 minetest.register_craftitem("futureshard_shield:frame", {
-    description = "This metal frame is oddly cool, and your fingers tingle when you touch it",
+    description = "Futureshard Shield Frame",
     inventory_image = "futureshard_shield_frame.png"
 })
 
 minetest.register_craftitem("futureshard_shield:sphere", {
-    description = "This light casts eerie reflections from odd objects, like the nodes that surround you",
+    description = "Futureshard Shield Sphere",
     inventory_image = "futureshard_shield_sphere.png"
 })
 
@@ -120,7 +120,7 @@ local function fire_lightning(player)
                 collisiondetection = false,
                 vertical = false,
                 texture = "particle.png",
-                glow = 14,
+                glow = 15,
             })
         end
     end
@@ -131,7 +131,7 @@ local function fire_lightning(player)
 end
 
 minetest.register_tool(SHIELD_NAME, {
-    description = "Amethyst Sphere Shield",
+    description = "Futureshard Shield",
     inventory_image = "futureshard_shield.png",
     groups = {tool = 1}
 })
