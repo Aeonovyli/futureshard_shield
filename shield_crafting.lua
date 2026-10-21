@@ -1,4 +1,4 @@
-minetest.register_craft({
+core.register_craft({
     output = "futureshard_shield:core",
     recipe = {
         {"mcl_amethyst:amethyst_shard","mcl_core:glass","mcl_amethyst:amethyst_shard"},
@@ -7,7 +7,7 @@ minetest.register_craft({
     }
 })
 
-minetest.register_craft({
+core.register_craft({
     output = "futureshard_shield:frame",
     recipe = {
         {"mcl_core:lapis","","mcl_core:emerald"},
@@ -16,7 +16,7 @@ minetest.register_craft({
     }
 })
 
-minetest.register_craft({
+core.register_craft({
     output = "futureshard_shield:sphere",
     recipe = {
         {"mcl_core:iron_ingot","mcl_end:chorus_fruit_popped","mcl_core:iron_ingot"},
@@ -25,7 +25,7 @@ minetest.register_craft({
     }
 })
 
-minetest.register_craft({
+core.register_craft({
     type = "shapeless",
     output = "futureshard_shield:shield",
     recipe = {
