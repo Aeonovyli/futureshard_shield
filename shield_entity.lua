@@ -1,4 +1,4 @@
-minetest.register_entity("futureshard_shield:shield_entity", {
+core.register_entity("futureshard_shield:shield_entity", {
     initial_properties = {
         physical = false,
         collide_with_objects = false,
@@ -18,7 +18,7 @@ minetest.register_entity("futureshard_shield:shield_entity", {
         local pos = self.player:get_pos()
 
           for i = 1, 3 do
-            local objs = minetest.get_objects_inside_radius(pos, 3.5)
+            local objs = core.get_objects_inside_radius(pos, 3.5)
             for _, obj in ipairs(objs) do
                 local name = obj:get_entity_name()
                 if name and name:find("vl_projectiles:") then
