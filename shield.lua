@@ -5,7 +5,7 @@ local shard_seconds = 3
 local COOLDOWN_TIME = 2.0
 
 local blacklist = {}
-local blacklist_path = core.get_modpath("futureshard_shield") .. "/blacklist.conf"
+local blacklist_path = minetest.get_modpath("futureshard_shield") .. "/blacklist.conf"
 
 local function load_blacklist()
     local file = io.open(blacklist_path, "r")
@@ -21,7 +21,7 @@ end
 
 load_blacklist()
 
-core.register_on_punchplayer(function(player)
+minetest.register_on_punchplayer(function(player)
     local pname = player:get_player_name()
     local state = SHIELD_STATE[pname]
     if state and state.entity and state.entity:get_luaentity() then
@@ -29,7 +29,7 @@ core.register_on_punchplayer(function(player)
     end
 end)
 
-core.register_entity("futureshard_shield:shield_entity", {
+minetest.register_entity("futureshard_shield:shield_entity", {
     initial_properties = {
         physical = false,
         collide_with_objects = false,
@@ -37,26 +37,45 @@ core.register_entity("futureshard_shield:shield_entity", {
         visual = "mesh",
         mesh = "futureshard_shield_sphere.obj",
     },
+
     player = nil,
+
     on_step = function(self, dtime)
         if not self.player or not self.player:is_player() then
             self.object:remove()
             return
         end
+
+        local pos = self.player:get_pos()
+
+          for i = 1, 3 do
+            local objs = minetest.get_objects_inside_radius(pos, 3.5)
+            for _, obj in ipairs(objs) do
+                local name = obj:get_entity_name()
+                if name and name:find("vl_projectiles:") then
+                    obj:remove()
+                end
+            end
+        end
     end
 })
 
-core.register_craftitem("futureshard_shield:core", {
+minetest.register_craftitem("futureshard_shield:battery", {
+    description = "Futureshard Shield Battery",
+    inventory_image = "futureshard_shield_battery.png"
+})
+
+minetest.register_craftitem("futureshard_shield:core", {
     description = "Futureshard Shield Core",
     inventory_image = "futureshard_shield_core.png"
 })
 
-core.register_craftitem("futureshard_shield:frame", {
+minetest.register_craftitem("futureshard_shield:frame", {
     description = "Futureshard Shield Frame",
     inventory_image = "futureshard_shield_frame.png"
 })
 
-core.register_craftitem("futureshard_shield:sphere", {
+minetest.register_craftitem("futureshard_shield:sphere", {
     description = "Futureshard Shield Sphere",
     inventory_image = "futureshard_shield_sphere.png"
 })
@@ -67,7 +86,7 @@ local function stop_shield(pname)
     if state.entity and state.entity:get_luaentity() then
         state.entity:remove()
     end
-    local player = core.get_player_by_name(pname)
+    local player = minetest.get_player_by_name(pname)
     if player then
         player:set_armor_groups({fleshy = 100})
     end
@@ -82,7 +101,7 @@ local function fire_lightning(player)
     local beam_start_pos = vector.add(eye_pos, vector.multiply(dir, 2))
     local target_pos = vector.add(eye_pos, vector.multiply(dir, 60))
 
-    local ray = core.raycast(eye_pos, target_pos, true, false)
+    local ray = minetest.raycast(eye_pos, target_pos, true, false)
     while true do
         local pointed = ray:next()
         if not pointed then break end
@@ -91,10 +110,28 @@ local function fire_lightning(player)
             local obj = pointed.ref
             local lua_ent = obj:get_luaentity()
             local entity_name = lua_ent and lua_ent.name or (obj.get_name and obj:get_name() or "unknown")
-
-            if entity_name ~= "futureshard_shield:shield_entity" and not blacklist[entity_name] and not entity_name:find("wither") then
+            if entity_name ~= "futureshard_shield:shield_entity" and entity_name ~= "__builtin:item" and not blacklist[entity_name] and entity_name ~= "mcl_monsters:wither" then
                 if obj.punch then
-                    obj:punch(player, 1.0, {damage_groups = {fleshy = 30000}})
+                    local lua_ent = obj:get_luaentity()
+
+                    if lua_ent and (lua_ent.is_mob or lua_ent._cmi_is_mob) then
+                        if minetest.get_modpath("mcl_util") and mcl_util.deal_damage then
+                            mcl_util.deal_damage(obj, 30000, {type = "void", puncher = player})
+                        else
+                            obj:set_hp(0)
+                        end
+                    else
+                        local old_pos = player:get_pos()
+                        local target_pos = obj:get_pos()
+                        if target_pos then
+                            player:set_pos(target_pos)
+                        end
+                        obj:punch(player, 1.0, {
+                            full_punch_interval = 0.1,
+                            damage_groups = {fleshy = 30000}
+                        })
+                        player:set_pos(old_pos)
+                    end
                 end
             end
         elseif pointed.type == "node" then
@@ -111,7 +148,7 @@ local function fire_lightning(player)
             local t = i / steps
             local p_pos = vector.add(beam_start_pos, vector.multiply(vector.direction(beam_start_pos, target_pos), distance * t))
 
-            core.add_particle({
+            minetest.add_particle({
                 pos = p_pos,
                 velocity = {x=0, y=0, z=0},
                 acceleration = {x=0, y=0, z=0},
@@ -125,19 +162,25 @@ local function fire_lightning(player)
         end
     end
 
-    if core.registered_entities["mcl_weather:lightning"] then
-        core.add_entity(target_pos, "mcl_weather:lightning")
+    if minetest.registered_entities["mcl_weather:lightning"] then
+        minetest.add_entity(target_pos, "mcl_weather:lightning")
     end
 end
 
-core.register_tool(SHIELD_NAME, {
+minetest.register_tool(SHIELD_NAME, {
     description = "Futureshard Shield",
     inventory_image = "futureshard_shield.png",
-    groups = {tool = 1}
+    groups = {tool = 1},
+    tool_capabilities = {
+        full_punch_interval = 0.1,
+        max_drop_level = 0,
+        groupcaps = {},
+        damage_groups = {fleshy = 1},
+    }
 })
 
-core.register_globalstep(function(dtime)
-    for _, player in ipairs(core.get_connected_players()) do
+minetest.register_globalstep(function(dtime)
+    for _, player in ipairs(minetest.get_connected_players()) do
         local pname = player:get_player_name()
         local wield = player:get_wielded_item()
 
@@ -149,7 +192,7 @@ core.register_globalstep(function(dtime)
             if not state then
                 local inv = player:get_inventory()
                 if inv:contains_item("main", SHARD_ITEM) then
-                    local obj = core.add_entity(player:get_pos(), "futureshard_shield:shield_entity")
+                    local obj = minetest.add_entity(player:get_pos(), "futureshard_shield:shield_entity")
                     if obj then
                         obj:set_attach(player, "", {x=0, y=1.2, z=0}, {x=0, y=0, z=0})
                         local ent = obj:get_luaentity()
@@ -199,7 +242,7 @@ core.register_globalstep(function(dtime)
                     player:set_armor_groups({fleshy = 0})
 
                     local pos = player:get_pos()
-                    local objs = core.get_objects_inside_radius(pos, 3.5)
+                    local objs = minetest.get_objects_inside_radius(pos, 3.5)
 
                     for _, obj in ipairs(objs) do
                         if not obj:is_player() then
@@ -241,12 +284,12 @@ core.register_globalstep(function(dtime)
     end
 end)
 
-core.register_on_leaveplayer(function(player)
+minetest.register_on_leaveplayer(function(player)
     local pname = player:get_player_name()
     stop_shield(pname)
 end)
 
-core.register_on_dieplayer(function(player)
+minetest.register_on_dieplayer(function(player)
     local pname = player:get_player_name()
     stop_shield(pname)
 end)
