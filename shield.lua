@@ -110,9 +110,11 @@ local function fire_lightning(player)
             local obj = pointed.ref
             local lua_ent = obj:get_luaentity()
             local entity_name = lua_ent and lua_ent.name or (obj.get_name and obj:get_name() or "unknown")
+
             if entity_name ~= "futureshard_shield:shield_entity" and entity_name ~= "__builtin:item" and not blacklist[entity_name] and entity_name ~= "mcl_monsters:wither" then
                 if obj.punch then
                     local lua_ent = obj:get_luaentity()
+                    local t_pos = obj:get_pos() or target_pos
 
                     if lua_ent and (lua_ent.is_mob or lua_ent._cmi_is_mob) then
                         if minetest.get_modpath("mcl_util") and mcl_util.deal_damage then
@@ -132,6 +134,24 @@ local function fire_lightning(player)
                         })
                         player:set_pos(old_pos)
                     end
+
+                    for i = 0, 23 do
+                        local angle = i * (2 * math.pi / 24)
+                        local offset_x = math.cos(angle)
+                        local offset_z = math.sin(angle)
+
+                        minetest.add_particle({
+                            pos = vector.add(t_pos, vector.new(offset_x * 0.2, 0.5, offset_z * 0.2)),
+                            velocity = vector.new(offset_x * 4, 0.2, offset_z * 4),
+                            acceleration = vector.new(-offset_x * 1.5, 0, -offset_z * 1.5),
+                            expirationtime = 0.8,
+                            size = 3.5,
+                            collisiondetection = false,
+                            vertical = false,
+                            texture = "mcl_particles_black_heart.png",
+                            glow = 14,
+                        })
+                    end
                 end
             end
         elseif pointed.type == "node" then
@@ -140,28 +160,49 @@ local function fire_lightning(player)
         end
     end
 
-    local distance = vector.distance(beam_start_pos, target_pos)
-    local steps = math.floor(distance * 4)
+        local distance = vector.distance(beam_start_pos, target_pos)
+    local steps = math.floor(distance * 8)
 
     if steps > 0 then
+        local look_dir = vector.direction(beam_start_pos, target_pos)
+
+        local up = {x = 0, y = 1, z = 0}
+        if math.abs(look_dir.y) > 0.9 then
+            up = {x = 1, y = 0, z = 0}
+        end
+
+        local right = vector.normalize(vector.cross(look_dir, up))
+        local orth_up = vector.normalize(vector.cross(right, look_dir))
+
         for i = 0, steps do
             local t = i / steps
-            local p_pos = vector.add(beam_start_pos, vector.multiply(vector.direction(beam_start_pos, target_pos), distance * t))
+            local p_center = vector.add(beam_start_pos, vector.multiply(look_dir, distance * t))
 
-            minetest.add_particle({
-                pos = p_pos,
-                velocity = {x=0, y=0, z=0},
-                acceleration = {x=0, y=0, z=0},
-                expirationtime = 0.3,
-                size = 2,
-                collisiondetection = false,
-                vertical = false,
-                texture = "particle.png",
-                glow = 15,
-            })
+            for angle_step = 1, 4 do
+                local angle = (angle_step * (2 * math.pi / 4)) + (i * 0.1)
+                local radius = 0.15
+
+                local offset = vector.add(
+                    vector.multiply(right, math.cos(angle) * radius),
+                    vector.multiply(orth_up, math.sin(angle) * radius)
+                )
+
+                local p_pos = vector.add(p_center, offset)
+
+                minetest.add_particle({
+                    pos = p_pos,
+                    velocity = {x = 0, y = 0, z = 0},
+                    acceleration = {x = 0, y = 0, z = 0},
+                    expirationtime = 0.25,
+                    size = 4,
+                    collisiondetection = false,
+                    vertical = false,
+                    texture = "particle.png",
+                    glow = 15,
+                })
+            end
         end
     end
-
     if minetest.registered_entities["mcl_weather:lightning"] then
         minetest.add_entity(target_pos, "mcl_weather:lightning")
     end
