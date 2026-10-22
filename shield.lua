@@ -65,19 +65,19 @@ minetest.register_craftitem("futureshard_shield:battery", {
     inventory_image = "futureshard_shield_battery.png"
 })
 
-minetest.register_craftitem("futureshard_shield:core", {
-    description = "Futureshard Shield Core",
-    inventory_image = "futureshard_shield_core.png"
+minetest.register_craftitem("futureshard_shield:gem", {
+    description = "Futureshard Shield Gem",
+    inventory_image = "futureshard_shield_gem.png"
+})
+
+minetest.register_craftitem("futureshard_shield:power", {
+    description = "Futureshard Shield Power",
+    inventory_image = "futureshard_shield_power.png"
 })
 
 minetest.register_craftitem("futureshard_shield:frame", {
     description = "Futureshard Shield Frame",
     inventory_image = "futureshard_shield_frame.png"
-})
-
-minetest.register_craftitem("futureshard_shield:sphere", {
-    description = "Futureshard Shield Sphere",
-    inventory_image = "futureshard_shield_sphere.png"
 })
 
 local function stop_shield(pname)
